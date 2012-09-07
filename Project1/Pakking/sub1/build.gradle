@@ -1,0 +1,7 @@
+apply plugin: 'groovy'
+
+dependencies {
+	groovy "org.codehaus.groovy:groovy-all:1.8.6"
+	compile "commons-collections:commons-collections:2.0"
+	
+}

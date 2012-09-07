@@ -1,0 +1,50 @@
+apply plugin: 'groovy'
+apply plugin: 'application'
+
+repositories{mavenCentral()}
+
+dependencies {
+	groovy "org.codehaus.groovy:groovy:2.0.1"
+	compile "commons-collections:commons-collections:2.0"
+}
+
+mainClassName = "no.javazone.gradle.SaneCode"
+
+
+ext.env = hasProperty('env') ? env : 'dev'
+task createConfigFileForEnv() {
+	def envConfigDir = file("$buildDir/config")
+	inputs.file 'config.groovy'
+	inputs.property 'env', env
+	outputs.files envConfigDir
+	
+	doLast {
+		if(!envConfigDir.exists()) envConfigDir.mkdirs()
+		def configFile = file('config.groovy')
+		def config = new ConfigSlurper(env).parse(configFile.toURL()).toProperties()
+		def envConfigFile = new File(envConfigDir, "config.properties")
+		envConfigFile.withWriter{writer -> 
+			config.each {writer.writeLine("${it.key}=${it.value}")}
+		}
+
+	}	
+}
+
+applicationDistribution.from(createConfigFileForEnv) {
+    into "config"
+}
+
+
+// Convenience tasks
+task printZip << {
+	def tree = zipTree("build/distributions/Environments.zip")
+	tree.visit {element ->
+	    println "$element.relativePath"
+	}
+}
+
+task printProperties << {
+	def tree = zipTree("build/distributions/Environments.zip").matching{
+		include "**/config.properties"}
+	println tree.singleFile.text
+}

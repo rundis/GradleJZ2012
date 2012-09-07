@@ -1,0 +1,29 @@
+apply plugin: 'base'
+
+task lagEnFil()  {
+	println "Jeg kjører i configfasen"
+	ext.f = file('javazone.txt')
+	outputs.file(f)
+	
+	doLast {
+		println "Nå er jeg i eksekveringsfasen"
+		f << "Gradle rocks"
+	}
+}
+
+task lesEnFil() {
+	inputs.files lagEnFil.outputs
+	
+	
+	outputs.upToDateWhen {task -> 
+	    ext.myUpToDate = true
+		task.taskDependencies.getDependencies(task).any{ 
+			if(it.didWork) ext.myUpToDate = false
+		}
+	    ext.myUpToDate
+	}  
+	
+	doLast {
+		println lagEnFil.f.text
+	}
+}

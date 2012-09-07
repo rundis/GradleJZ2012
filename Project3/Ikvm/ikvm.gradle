@@ -1,0 +1,56 @@
+ext.executeIkvm = {ikvmDll, args ->
+    def ikvmExec = new File(System.getenv()['IKVM_HOME'] , 'bin/ikvmc.exe')
+    assert ikvmExec.exists(), "You must install Ikvm and set IKVM_HOME env variable"
+
+    def commandLineArgs = [ikvmExec] + args
+    println commandLineArgs
+    exec {
+    	commandLine = commandLineArgs
+    }
+
+}
+
+ext.addIkvmTask = {ikvmProject->
+    if(ikvmProject.getTasksByName("ikvm", false)) return
+
+	ikvmProject.task("ikvm", dependsOn: ikvmProject.jar) {
+        description = "Generates Ikvm dll for given project"
+        ext.ikvmOutDir = file("${ikvmProject.buildDir}/ikvm")
+        ext.ikvmDll = new File(ikvmOutDir, "${ikvmProject.name}.dll")
+        ext.referencedDlls = []
+
+        inputs.files ikvmProject.jar.archivePath
+        outputs.files ikvmOutDir
+
+        doFirst {
+            if (!ikvmOutDir.exists()) ikvmOutDir.mkdir()
+        }
+
+        doLast {
+            def commandLineArgs = ["-out:$ikvmDll", "-version:$version", ikvmProject.jar.archivePath]
+            commandLineArgs += referencedDlls.collect{"-reference:$it"}
+            executeIkvm(ikvmDll, commandLineArgs)
+        }
+    }
+}
+
+ext.configureIkvmProject = {ikvmProject ->
+	addIkvmTask(ikvmProject)
+    
+    def referencedSubDlls = ikvmProject.configurations.runtime.allDependencies.collect {dependency ->
+		if (dependency instanceof ProjectDependency) {
+		    def ikvmSubProject = project(":${dependency.name}")
+            addIkvmTask(ikvmSubProject)
+            ikvmProject.ikvm.dependsOn ikvmSubProject.ikvm
+            return [ikvmSubProject.ikvm.ikvmDll] + configureIkvmProject(ikvmSubProject)
+        } else {
+            throw new RuntimeException("Sorry not supporting third party dependendcies as of yet!")
+        }
+    }
+    if(referencedSubDlls) {
+        referencedSubDlls = referencedSubDlls.flatten().findAll{it} 
+        ikvmProject.ikvm.referencedDlls = (ikvmProject.ikvm.referencedDlls + referencedSubDlls).unique()
+    	ikvmProject.build.dependsOn ikvmProject.ikvm
+	    return ikvmProject.ikvm.referencedDlls
+	} 
+}

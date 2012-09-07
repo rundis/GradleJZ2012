@@ -1,0 +1,27 @@
+defaultTasks "build"
+
+subprojects {
+	apply plugin: 'java'
+	
+	task myTask << {
+		println "Hello there guys im in ${project.name}"
+	}
+	build.dependsOn myTask
+	
+	
+	afterEvaluate {project ->
+		if(project.plugins.hasPlugin('war')) {
+			task myWarTask << {
+				println "I should run before the war task..."
+			}
+			war.dependsOn myWarTask
+		}
+	}
+	
+}
+
+
+project(':sub3') {
+	apply plugin : 'war'
+}
+

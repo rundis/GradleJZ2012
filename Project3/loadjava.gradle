@@ -1,0 +1,103 @@
+/**
+ * Task(s) for å laste jar filer inn i Oracle database.
+ */
+configurations {
+    loadJavaLibs
+    loadJavaExternalLibs
+}
+
+dependencies {
+    loadJavaLibs libs.oracle_jdbc, 'com.oracle.aurora:aurora:11.2.0@zip' 
+    loadJavaExternalLibs libs.jdom  
+}
+
+ljUser = project.hasProperty("ljUser") ? project.ljUser : ""
+ljPwd = project.hasProperty("ljPwd") ? project.ljPwd : ""
+ljSid = project.hasProperty("ljSid") ? project.ljSid : ""
+
+
+validateLoadJavaParams = {
+    if (!ljUser || !ljPwd || !ljSid)
+        throw new IllegalArgumentException(
+"""
+Property ljUser, ljPwd og ljSid maa vaere satt for å kjoere loadjava
+Eks: loadJava -PljUser=q1e -PljPwd=xxx -PljSid=asnt18:1521:aba4
+"""
+        )
+}
+
+doLoadJava = {args ->
+    url = "${args.user}/${args.pwd}@${args.sid}"
+    ant.java(classname: "oracle.aurora.server.tools.loadjava.LoadJavaMain", classpath: configurations.loadJavaLibs.asPath, fork:true) {
+        arg(value: "-thin")
+        arg(value: "-force")
+        arg(value: "-resolve")
+        arg(value: "-verbose")
+        arg(value: "-user")
+        arg(value: url)
+        arg(value: args.file)
+    }
+}
+
+
+/**
+ * Legger til Load java task til alle subprosjekter som er definert i rot gradle byggefil som kandidater
+ * for innlasting i oracle
+ */
+rootProject.ljProjects.each {ljProject ->
+    ljProject.task("loadJava", dependsOn: ljProject.jar) {
+        description = "Task for å laste inn java jar inn i et oracle skjema"
+        doLast {
+            validateLoadJavaParams()
+            doLoadJava(user: ljUser, pwd:ljPwd, sid: ljSid, file: ljProject.jar.archivePath)
+        }
+    }
+}
+
+/**
+ * Legger til task for å laste inn 3.parts biblioteker i Oracle
+ */
+task load3rdPartyJavaJars(type: JavaExec) {
+    description = "Task for å laste inn alle eksterne java jar filer i et gitt oracle skjema"
+    doLast {
+        configurations.loadJavaExternalLibs.resolvedConfiguration.resolvedArtifacts.file.each {file ->
+            validateLoadJavaParams()
+            doLoadJava(user: ljUser, pwd:ljPwd, sid: ljSid, file: file)
+        }
+    }
+}
+
+/**
+ * Compisite task som laster inn alla java jar filer og eksterne java jar filer til et angitt oracle skjema
+ */
+task loadJavaAll() {
+    dependsOn load3rdPartyJavaJars
+    dependsOn ljProjects*.loadJava
+
+    doLast {
+        println "Lastet alle jar filer inn i angitt skjema"
+    }
+}
+
+
+ljUsers = project.hasProperty("ljUsers") ? project.ljUsers : ""
+task loadJavaAllMultiSchema() {
+    description = "Load java for alle prosjekter og 3.parts avhengigheter for flere skjemaer."
+    dependsOn ljProjects*.jar
+
+    doLast {
+        def users = ljUsers.split(",")
+        def ljJars = ljProjects*.jar*.archivePath
+
+        users.each {user ->
+            ljJars.each {ljJar ->
+                doLoadJava(user: user, pwd:ljPwd, sid: ljSid, file: ljJar)
+            }
+            configurations.loadJavaExternalLibs.resolvedConfiguration.resolvedArtifacts.file.each {file ->
+                doLoadJava(user: user, pwd:ljPwd, sid: ljSid, file: file)
+            }
+        }
+    }
+}
+
+

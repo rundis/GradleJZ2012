@@ -1,0 +1,34 @@
+apply plugin: 'base'
+
+defaultTasks "build"
+
+subprojects {
+	apply plugin: 'groovy'
+	repositories {
+		mavenCentral()
+	}
+	
+	dependencies.testCompile 'junit:junit:4.10'	
+}
+
+task myDist(type: Zip) {
+	from subprojects.jar
+}
+
+task srcJar(type: Zip) {
+	archiveName 'mySources.jar'
+	from subprojects.sourceSets.main.allGroovy
+}
+
+
+task groovydocs(type: Groovydoc) { 
+     source subprojects.collect {project -> project.sourceSets.main.allGroovy } 
+     destinationDir = new File(buildDir, 'groovydoc') 
+     groovyClasspath = files(subprojects.collect {project -> project.sourceSets.main.compileClasspath}) 
+	 classpath = files(subprojects.collect {project -> project.sourceSets.main.compileClasspath}) 
+}
+
+task publishGroovyDoc(type : Sync) {
+	from groovydocs.outputs
+	into new File('groovydocserver')
+}

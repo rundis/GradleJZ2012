@@ -1,0 +1,35 @@
+apply plugin: 'base'
+
+
+subprojects {subproject ->
+	repositories {mavenCentral()}
+	apply plugin: 'java'
+	apply from: "$rootDir/ikvm.gradle"
+	
+	dependencies.testCompile 'junit:junit:4.10'	
+	
+	version = '0.1'
+	afterEvaluate { project ->
+		configureIkvmProject project
+	}
+}
+
+/* ------- Start : Configure individual subprojects --------- */
+
+project(':ModuleA') {
+	dependencies.compile project(':ModuleB'), project(':ModuleC')
+}
+
+project(':ModuleB') {
+	dependencies.compile project(':ModuleD')
+}
+
+project(':ModuleC') {
+	dependencies.compile project(':ModuleD'), project(':ModuleE')
+}
+
+/* ------- End : Configure individual subprojects --------- */
+
+
+
+

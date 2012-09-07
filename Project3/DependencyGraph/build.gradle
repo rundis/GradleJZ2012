@@ -1,0 +1,47 @@
+
+allprojects {
+	
+	repositories {
+		mavenCentral()
+	}
+}
+
+subprojects {
+	apply plugin: 'java'
+	dependencies {
+		testCompile "junit:junit:4.10"
+	}
+}
+
+
+
+
+ext.reportsDir = new File("build/reports")
+ext.compileDepsPng = file("$reportsDir/compileDeps.png")
+
+task dependenciesPng() {
+  description "Create a dependency dot graph for compile configuration."
+  inputs.files subprojects.configurations.compile
+  outputs.files compileDepsPng
+  doFirst {
+    if(compileDepsPng.exists()) compileDepsPng.delete()
+    if(!reportsDir.exists()) reportsDir.mkdirs()
+  }
+  doLast {
+    def deps = subprojects.collect {subproject ->
+        subproject.configurations.compile.dependencies.collect {dependency ->
+            "\"$subproject.name\" -> \"$dependency.name\"" 
+       }
+    }.flatten()
+    
+    def dotGraph = "digraph Compile{ ${deps.sum()} }"
+  
+    def chartParams = [cht: 'gv', chof: 'png', chl: dotGraph]
+    def url = "http://chart.googleapis.com/chart?" 
+    url += chartParams.collect {k,v -> "$k=${URLEncoder.encode(v)}"}.join('&')
+  
+    compileDepsPng.withOutputStream{out ->
+      out << new URL(url).openStream()
+    } 
+  }
+}
