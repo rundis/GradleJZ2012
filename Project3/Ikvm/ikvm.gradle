@@ -27,11 +27,13 @@ ext.addIkvmTask = {ikvmProject->
         }
 
         doLast {
-            def commandLineArgs = ["-out:$ikvmDll", "-version:$version", ikvmProject.jar.archivePath]
-            commandLineArgs += referencedDlls.collect{"-reference:$it"}
+            def commandLineArgs = [
+				"-out:$ikvmDll", "-version:$version", 
+				ikvmProject.jar.archivePath] + referencedDlls.collect{"-reference:$it"}
             executeIkvm(ikvmDll, commandLineArgs)
         }
     }
+	ikvmProject.build.dependsOn ikvmProject.ikvm
 }
 
 ext.configureIkvmProject = {ikvmProject ->
@@ -50,7 +52,6 @@ ext.configureIkvmProject = {ikvmProject ->
     if(referencedSubDlls) {
         referencedSubDlls = referencedSubDlls.flatten().findAll{it} 
         ikvmProject.ikvm.referencedDlls = (ikvmProject.ikvm.referencedDlls + referencedSubDlls).unique()
-    	ikvmProject.build.dependsOn ikvmProject.ikvm
 	    return ikvmProject.ikvm.referencedDlls
 	} 
 }

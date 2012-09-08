@@ -1,29 +1,40 @@
 apply plugin: 'base'
 
-task lagEnFil()  {
-	println "Jeg kjører i configfasen"
-	ext.f = file('javazone.txt')
-	outputs.file(f)
+task compileJava() {
+	ext.srcDir = file('src')
+	ext.classesDir = file('build/classes')
 	
+	inputs.files srcDir
+	outputs.files classesDir
+	
+	doFirst {
+		if(!classesDir.exists()) classesDir.mkdirs()
+	}
 	doLast {
-		println "Nå er jeg i eksekveringsfasen"
-		f << "Gradle rocks"
+		ant.javac(srcdir: srcDir, destdir: classesDir, includeAntRuntime:false)
 	}
 }
 
-task lesEnFil() {
-	inputs.files lagEnFil.outputs
+
+task jar() {
+	ext.libsDir = file("build/libs")
+	ext.archivePath = file("build/libs/${project.name}.jar")
 	
+	inputs.files compileJava.outputs.files
+	outputs.files archivePath
 	
-	outputs.upToDateWhen {task -> 
-	    ext.myUpToDate = true
-		task.taskDependencies.getDependencies(task).any{ 
-			if(it.didWork) ext.myUpToDate = false
-		}
-	    ext.myUpToDate
-	}  
-	
-	doLast {
-		println lagEnFil.f.text
+	doFirst {
+		if(!libsDir.exists()) libsDir.mkdirs()
 	}
+	doLast {
+		ant.jar(basedir: compileJava.classesDir, destfile: archivePath)
+	}
+}
+
+
+
+task run(type: JavaExec) {
+	inputs.files jar.outputs.files
+	main 'no.gradle.javazone.IncrementalDemo'
+	classpath jar.archivePath
 }

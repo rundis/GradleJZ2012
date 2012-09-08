@@ -1,8 +1,7 @@
-apply plugin: 'java' // project.apply([plugin:'java'])
+apply plugin: 'java' // samme som: project.apply([plugin:'java'])
 
 repositories { mavenCentral() }
 
 dependencies {
-	compile "commons-collections:commons-collections:2.0"
 	testCompile "junit:junit:4.10"
 }
