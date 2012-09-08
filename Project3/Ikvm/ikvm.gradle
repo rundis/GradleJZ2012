@@ -17,7 +17,7 @@ ext.addIkvmTask = {ikvmProject->
         description = "Generates Ikvm dll for given project"
         ext.ikvmOutDir = file("${ikvmProject.buildDir}/ikvm")
         ext.ikvmDll = new File(ikvmOutDir, "${ikvmProject.name}.dll")
-        ext.referencedDlls = []
+        ext.referencedDlls = [] as Set
 
         inputs.files ikvmProject.jar.archivePath
         outputs.files ikvmOutDir
@@ -48,10 +48,7 @@ ext.configureIkvmProject = {ikvmProject ->
         } else {
             throw new RuntimeException("Sorry not supporting third party dependendcies as of yet!")
         }
-    }
-    if(referencedSubDlls) {
-        referencedSubDlls = referencedSubDlls.flatten().findAll{it} 
-        ikvmProject.ikvm.referencedDlls = (ikvmProject.ikvm.referencedDlls + referencedSubDlls).unique()
-	    return ikvmProject.ikvm.referencedDlls
-	} 
+    }.flatten()
+    
+	ikvmProject.ikvm.referencedDlls += referencedSubDlls
 }

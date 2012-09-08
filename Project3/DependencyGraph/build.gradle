@@ -1,6 +1,5 @@
-
+apply plugin: 'base'
 allprojects {
-	
 	repositories {
 		mavenCentral()
 	}
@@ -14,8 +13,6 @@ subprojects {
 }
 
 
-
-
 ext.reportsDir = new File("build/reports")
 ext.compileDepsPng = file("$reportsDir/compileDeps.png")
 
@@ -23,8 +20,8 @@ task dependenciesPng() {
   description "Create a dependency dot graph for compile configuration."
   inputs.files subprojects.configurations.compile
   outputs.files compileDepsPng
+
   doFirst {
-    if(compileDepsPng.exists()) compileDepsPng.delete()
     if(!reportsDir.exists()) reportsDir.mkdirs()
   }
   doLast {

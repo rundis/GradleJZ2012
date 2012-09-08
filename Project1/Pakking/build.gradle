@@ -1,6 +1,6 @@
 apply plugin: 'base'
 
-defaultTasks "build"
+
 
 subprojects {
 	apply plugin: 'groovy'
@@ -31,4 +31,17 @@ task groovydocs(type: Groovydoc) {
 task publishGroovyDoc(type : Sync) {
 	from groovydocs.outputs
 	into new File('groovydocserver')
+}
+
+
+
+// helper task
+
+task showContents() << {
+	assert project.archiveName
+	
+	def tree = zipTree("build/distributions/$archiveName")
+	tree.visit {element ->
+		println "$element.relativePath"
+	}
 }
