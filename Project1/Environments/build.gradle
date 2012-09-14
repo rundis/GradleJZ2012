@@ -11,6 +11,9 @@ dependencies {
 mainClassName = "no.javazone.gradle.SaneCode"
 
 
+
+
+
 ext.env = hasProperty('env') ? env : 'dev'
 task createConfigFileForEnv() {
 	def envConfigDir = file("$buildDir/config")
@@ -26,7 +29,6 @@ task createConfigFileForEnv() {
 		envConfigFile.withWriter{writer -> 
 			config.each {writer.writeLine("${it.key}=${it.value}")}
 		}
-
 	}	
 }
 
@@ -35,7 +37,7 @@ applicationDistribution.from(createConfigFileForEnv) {
 }
 
 
-// Convenience tasks
+// Tasks for illustration only
 task printZip << {
 	def tree = zipTree("build/distributions/Environments.zip")
 	tree.visit {element ->
